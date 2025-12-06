@@ -1,0 +1,108 @@
+/* Project: Digital Recipe Book
+ * Class: INFO-C211
+ * Author: Angela Jones
+ * Date: 12-5-25
+ * Description: Represents a recipe with a title, description,
+ * ingredients, preparation time, and number of servings.
+ */
+
+package your.package.name;
+
+import java.util.ArrayList;
+
+public class Recipe {
+
+    // The title or name of the recipe.
+    private String title;
+
+    // A short description of the recipe.
+    private String description;
+
+    // The list of ingredients used in this recipe.
+    private ArrayList<Ingredient> ingredients;
+
+    // The number of minutes required to prepare this recipe.
+    private int prepTimeMinutes;
+
+    // The number of servings this recipe makes.
+    private int servings;
+
+    // Default constructor that creates an empty recipe.
+    public Recipe() {
+        this.title = "";
+        this.description = "";
+        this.ingredients = new ArrayList<Ingredient>();
+        this.prepTimeMinutes = 0;
+        this.servings = 0;
+    }
+
+    // Constructor that creates a recipe with a title and basic information.
+    public Recipe(String title, String description, int prepTimeMinutes, int servings) {
+        this.title = title;
+        this.description = description;
+        this.ingredients = new ArrayList<Ingredient>();
+        this.prepTimeMinutes = prepTimeMinutes;
+        this.servings = servings;
+    }
+
+    // Gets the title of the recipe.
+    public String getTitle() {
+        return title;
+    }
+
+    // Sets the title of the recipe.
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    // Gets the description of the recipe.
+    public String getDescription() {
+        return description;
+    }
+
+    // Sets the description of the recipe.
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    // Gets the list of ingredients for this recipe.
+    public ArrayList<Ingredient> getIngredients() {
+        return ingredients;
+    }
+
+    // Sets the list of ingredients for this recipe.
+    public void setIngredients(ArrayList<Ingredient> ingredients) {
+        this.ingredients = ingredients;
+    }
+
+    // Gets the preparation time in minutes.
+    public int getPrepTimeMinutes() {
+        return prepTimeMinutes;
+    }
+
+    // Sets the preparation time in minutes.
+    public void setPrepTimeMinutes(int prepTimeMinutes) {
+        this.prepTimeMinutes = prepTimeMinutes;
+    }
+
+    // Gets the number of servings for this recipe.
+    public int getServings() {
+        return servings;
+    }
+
+    // Sets the number of servings for this recipe.
+    public void setServings(int servings) {
+        this.servings = servings;
+    }
+
+    // Adds a single ingredient to this recipe.
+    public void addIngredient(Ingredient ingredient) {
+        ingredients.add(ingredient);
+    }
+
+    // Returns a simple text version of the recipe.
+    public String toString() {
+        return "Recipe: " + title + " (" + servings + " servings, "
+                + prepTimeMinutes + " minutes)";
+    }
+}
