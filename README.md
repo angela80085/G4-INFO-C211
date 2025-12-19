@@ -1,8 +1,3 @@
-## Class Distribution & Class Structure
-
-Project: Digital Recipe Book
-Author: Angela 
-
 ## Project Description
 
 The Digital Recipe Book is a Java application that allows users to store,
@@ -34,7 +29,7 @@ using Java Swing.
 
 ## Author
 
-- All classes and functionality implemented by: Your Name
+- All classes and functionality implemented by: Angela Jones
 
 ## How to Run
 
