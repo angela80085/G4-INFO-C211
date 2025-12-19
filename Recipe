@@ -6,8 +6,6 @@
  * ingredients, preparation time, and number of servings.
  */
 
-package your.package.name;
-
 import java.util.ArrayList;
 
 public class Recipe {
@@ -17,6 +15,9 @@ public class Recipe {
 
     // A short description of the recipe.
     private String description;
+
+    // The step-by-step instructions for making the recipe.
+    private String instructions;
 
     // The list of ingredients used in this recipe.
     private ArrayList<Ingredient> ingredients;
@@ -31,15 +32,17 @@ public class Recipe {
     public Recipe() {
         this.title = "";
         this.description = "";
+        this.instructions = "";
         this.ingredients = new ArrayList<Ingredient>();
         this.prepTimeMinutes = 0;
         this.servings = 0;
     }
 
-    // Constructor that creates a recipe with a title and basic information.
-    public Recipe(String title, String description, int prepTimeMinutes, int servings) {
+    // Constructor that creates a recipe with title, description, and instructions.
+    public Recipe(String title, String description, String instructions, int prepTimeMinutes, int servings) {
         this.title = title;
         this.description = description;
+        this.instructions = instructions;
         this.ingredients = new ArrayList<Ingredient>();
         this.prepTimeMinutes = prepTimeMinutes;
         this.servings = servings;
@@ -63,6 +66,16 @@ public class Recipe {
     // Sets the description of the recipe.
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    // Gets the instructions for the recipe.
+    public String getInstructions() {
+        return instructions;
+    }
+
+    // Sets the instructions for the recipe.
+    public void setInstructions(String instructions) {
+        this.instructions = instructions;
     }
 
     // Gets the list of ingredients for this recipe.
@@ -100,9 +113,9 @@ public class Recipe {
         ingredients.add(ingredient);
     }
 
-    // Returns a simple text version of the recipe.
+    // Returns a simple text version of the recipe (used by lists/logging).
     public String toString() {
-        return "Recipe: " + title + " (" + servings + " servings, "
-                + prepTimeMinutes + " minutes)";
+        return title;
     }
 }
+
