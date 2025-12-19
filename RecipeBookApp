@@ -1,32 +1,71 @@
 /* Project: Digital Recipe Book
  * Author: Angela Jones
- * Date: 12-17-2025
- * Description: Manages a collection of recipes and will provide
- * a graphical user interface to interact with the recipe book.
+ * Date: 12-18-2025
+ * Description: Manages a collection of recipes using an ArrayList and
+ * provides a minimal Swing GUI to view, add, search, and delete recipes.
  */
 
-package your.package.name;
-
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.util.ArrayList;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 
 public class RecipeBookApp {
 
-    // The list of recipes in this recipe book.
+    // The list of all recipes in the recipe book.
     private ArrayList<Recipe> recipes;
+
+    // The list currently displayed (used for search filtering).
+    private ArrayList<Recipe> displayedRecipes;
+
+    // GUI: list model for recipe titles.
+    private DefaultListModel<String> recipeListModel;
+
+    // GUI: list of recipe titles.
+    private JList<String> recipeList;
+
+    // GUI: detail display components.
+    private JLabel titleLabel;
+    private JLabel prepTimeLabel;
+    private JLabel servingsLabel;
+
+    // GUI: description and instructions areas.
+    private JTextArea descriptionArea;
+    private JTextArea instructionsArea;
+
+    // GUI: ingredients display.
+    private DefaultListModel<String> ingredientsListModel;
+    private JList<String> ingredientsList;
+
+    // GUI: search field.
+    private JTextField searchField;
 
     // Default constructor that creates an empty recipe book.
     public RecipeBookApp() {
         this.recipes = new ArrayList<Recipe>();
+        this.displayedRecipes = new ArrayList<Recipe>();
     }
 
-    // Gets the list of recipes in this recipe book.
+    // Gets the list of recipes.
     public ArrayList<Recipe> getRecipes() {
         return recipes;
-    }
-
-    // Sets the list of recipes in this recipe book.
-    public void setRecipes(ArrayList<Recipe> recipes) {
-        this.recipes = recipes;
     }
 
     // Adds a recipe to the recipe book.
@@ -34,11 +73,22 @@ public class RecipeBookApp {
         recipes.add(recipe);
     }
 
-    // Removes a recipe from the recipe book by its title.
+    // Finds a recipe by title (case-insensitive). Returns null if not found.
+    public Recipe findRecipeByTitle(String title) {
+        for (int i = 0; i < recipes.size(); i++) {
+            Recipe r = recipes.get(i);
+            if (r.getTitle().equalsIgnoreCase(title)) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    // Removes a recipe by title (case-insensitive). Returns true if removed.
     public boolean removeRecipeByTitle(String title) {
         for (int i = 0; i < recipes.size(); i++) {
-            Recipe current = recipes.get(i);
-            if (current.getTitle().equalsIgnoreCase(title)) {
+            Recipe r = recipes.get(i);
+            if (r.getTitle().equalsIgnoreCase(title)) {
                 recipes.remove(i);
                 return true;
             }
@@ -46,27 +96,531 @@ public class RecipeBookApp {
         return false;
     }
 
-    // Finds and returns a recipe by its title, or null if not found.
-    public Recipe findRecipeByTitle(String title) {
+    // Starts the GUI application.
+    public void startApp() {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                buildAndShowGUI();
+            }
+        });
+    }
+
+    // Builds the Swing GUI and shows the main window.
+    private void buildAndShowGUI() {
+        JFrame frame = new JFrame("Digital Recipe Book");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout(10, 10));
+
+        frame.add(buildLeftPanel(), BorderLayout.WEST);
+        frame.add(buildRightPanel(), BorderLayout.CENTER);
+
+        refreshRecipeList(recipes);
+        clearDetails();
+
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+
+    // Builds the left panel with search, recipe list, and action buttons.
+    private JPanel buildLeftPanel() {
+        JPanel leftPanel = new JPanel(new BorderLayout(10, 10));
+        leftPanel.setBorder(BorderFactory.createTitledBorder("Recipe Library"));
+        leftPanel.setPreferredSize(new Dimension(320, 600));
+
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchField = new JTextField(14);
+        JButton searchButton = new JButton("Search");
+        JButton clearButton = new JButton("Clear");
+
+        searchPanel.add(new JLabel("Title:"));
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+        searchPanel.add(clearButton);
+
+        recipeListModel = new DefaultListModel<String>();
+        recipeList = new JList<String>(recipeListModel);
+        recipeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane listScroll = new JScrollPane(recipeList);
+
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton addButton = new JButton("Add Recipe");
+        JButton deleteButton = new JButton("Delete Selected");
+
+        actionPanel.add(addButton);
+        actionPanel.add(deleteButton);
+
+        leftPanel.add(searchPanel, BorderLayout.NORTH);
+        leftPanel.add(listScroll, BorderLayout.CENTER);
+        leftPanel.add(actionPanel, BorderLayout.SOUTH);
+
+        recipeList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int idx = recipeList.getSelectedIndex();
+                if (idx >= 0 && idx < displayedRecipes.size()) {
+                    Recipe selected = displayedRecipes.get(idx);
+                    showRecipeDetails(selected);
+                }
+            }
+        });
+
+        searchButton.addActionListener(e -> {
+            String q = searchField.getText();
+            ArrayList<Recipe> results = searchByTitle(q);
+            refreshRecipeList(results);
+            clearDetails();
+        });
+
+        clearButton.addActionListener(e -> {
+            searchField.setText("");
+            refreshRecipeList(recipes);
+            clearDetails();
+        });
+
+        addButton.addActionListener(e -> {
+            AddRecipeDialog dialog = new AddRecipeDialog();
+            dialog.setVisible(true);
+
+            if (dialog.getCreatedRecipe() != null) {
+                addRecipe(dialog.getCreatedRecipe());
+                refreshRecipeList(recipes);
+                clearDetails();
+            }
+        });
+
+        deleteButton.addActionListener(e -> {
+            int idx = recipeList.getSelectedIndex();
+            if (idx < 0 || idx >= displayedRecipes.size()) {
+                JOptionPane.showMessageDialog(null, "Please select a recipe to delete.");
+                return;
+            }
+
+            Recipe selected = displayedRecipes.get(idx);
+            int confirm = JOptionPane.showConfirmDialog(
+                    null,
+                    "Delete recipe: " + selected.getTitle() + "?",
+                    "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                removeRecipeByTitle(selected.getTitle());
+                refreshRecipeList(recipes);
+                clearDetails();
+            }
+        });
+
+        return leftPanel;
+    }
+
+    // Builds the right panel to show recipe details.
+    private JPanel buildRightPanel() {
+        JPanel rightPanel = new JPanel(new BorderLayout(10, 10));
+        rightPanel.setBorder(BorderFactory.createTitledBorder("Recipe Details"));
+        rightPanel.setPreferredSize(new Dimension(520, 600));
+
+        titleLabel = new JLabel("Select a recipe.");
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        rightPanel.add(titleLabel, BorderLayout.NORTH);
+
+        JPanel centerPanel = new JPanel(new GridLayout(3, 1, 10, 10));
+
+        JPanel descPanel = new JPanel(new BorderLayout(5, 5));
+        descPanel.setBorder(BorderFactory.createTitledBorder("Description"));
+        descriptionArea = new JTextArea(4, 30);
+        descriptionArea.setLineWrap(true);
+        descriptionArea.setWrapStyleWord(true);
+        descriptionArea.setEditable(false);
+        descPanel.add(new JScrollPane(descriptionArea), BorderLayout.CENTER);
+
+        JPanel instrPanel = new JPanel(new BorderLayout(5, 5));
+        instrPanel.setBorder(BorderFactory.createTitledBorder("Instructions"));
+        instructionsArea = new JTextArea(8, 30);
+        instructionsArea.setLineWrap(true);
+        instructionsArea.setWrapStyleWord(true);
+        instructionsArea.setEditable(false);
+        instrPanel.add(new JScrollPane(instructionsArea), BorderLayout.CENTER);
+
+        JPanel ingPanel = new JPanel(new BorderLayout(5, 5));
+        ingPanel.setBorder(BorderFactory.createTitledBorder("Ingredients"));
+        ingredientsListModel = new DefaultListModel<String>();
+        ingredientsList = new JList<String>(ingredientsListModel);
+        ingPanel.add(new JScrollPane(ingredientsList), BorderLayout.CENTER);
+
+        centerPanel.add(descPanel);
+        centerPanel.add(instrPanel);
+        centerPanel.add(ingPanel);
+
+        rightPanel.add(centerPanel, BorderLayout.CENTER);
+
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        prepTimeLabel = new JLabel("Prep time: ");
+        servingsLabel = new JLabel("Servings: ");
+
+        bottomPanel.add(prepTimeLabel);
+        bottomPanel.add(servingsLabel);
+
+        rightPanel.add(bottomPanel, BorderLayout.SOUTH);
+
+        return rightPanel;
+    }
+
+    // Refreshes the left-side recipe list to show the given collection.
+    private void refreshRecipeList(ArrayList<Recipe> listToShow) {
+        recipeListModel.clear();
+        displayedRecipes.clear();
+
+        for (int i = 0; i < listToShow.size(); i++) {
+            Recipe r = listToShow.get(i);
+            recipeListModel.addElement(r.getTitle());
+            displayedRecipes.add(r);
+        }
+    }
+
+    // Shows the details for the selected recipe on the right panel.
+    private void showRecipeDetails(Recipe r) {
+        titleLabel.setText(r.getTitle());
+        descriptionArea.setText(r.getDescription());
+        instructionsArea.setText(r.getInstructions());
+        prepTimeLabel.setText("Prep time: " + r.getPrepTimeMinutes() + " minutes");
+        servingsLabel.setText("Servings: " + r.getServings());
+
+        ingredientsListModel.clear();
+        for (int i = 0; i < r.getIngredients().size(); i++) {
+            ingredientsListModel.addElement(r.getIngredients().get(i).toString());
+        }
+    }
+
+    // Clears the recipe detail area.
+    private void clearDetails() {
+        titleLabel.setText("Select a recipe.");
+        descriptionArea.setText("");
+        instructionsArea.setText("");
+        prepTimeLabel.setText("Prep time: ");
+        servingsLabel.setText("Servings: ");
+        ingredientsListModel.clear();
+        recipeList.clearSelection();
+    }
+
+    // Returns recipes matching the given title query (case-insensitive contains).
+    private ArrayList<Recipe> searchByTitle(String query) {
+        ArrayList<Recipe> results = new ArrayList<Recipe>();
+        if (query == null) {
+            return results;
+        }
+
+        String q = query.trim().toLowerCase();
+        if (q.isEmpty()) {
+            results.addAll(recipes);
+            return results;
+        }
+
         for (int i = 0; i < recipes.size(); i++) {
-            Recipe current = recipes.get(i);
-            if (current.getTitle().equalsIgnoreCase(title)) {
-                return current;
+            Recipe r = recipes.get(i);
+            if (r.getTitle().toLowerCase().contains(q)) {
+                results.add(r);
             }
         }
-        return null;
+
+        return results;
     }
 
-    // Starts the application (later this will start the GUI).
-    public void startApp() {
-        // TODO: Add code to start the graphical user interface.
-        // For now, this is just a placeholder.
+    // Loads the user's recipes as sample data.
+    private void loadSampleRecipes() {
+        Recipe wings = new Recipe(
+                "Sticky Soy Hot Honey Wings",
+                "Crispy enoki 'wings' coated in a sticky hot honey buffalo-soy sauce.",
+                "1) Prepare wet batter: mix flour, water, salt, Kashmiri mirch, garlic powder, onion powder, and cumin until smooth and thick like pancake batter.\n"
+                        + "2) Prepare dry batter: combine flour, panko, and the same spice mix.\n"
+                        + "3) Prep mushrooms: cut root ends off enoki mushrooms and separate into smaller clusters.\n"
+                        + "4) Coat: dip clusters into wet batter (thin coating), portion into small wings.\n"
+                        + "5) Form wings: dip into dry batter; clump and press firmly for thick coating.\n"
+                        + "6) Fry in neutral oil until golden and crisp; drain on a wire rack.\n"
+                        + "7) Make sauce: melt butter low; add garlic, buffalo sauce, honey, smoked paprika, soy sauce; bubble 2–3 min.\n"
+                        + "8) Toss and serve immediately (great with ranch).",
+                35,
+                2
+        );
+        wings.addIngredient(new Ingredient("All purpose flour (wet batter)", 0.5, "cup"));
+        wings.addIngredient(new Ingredient("Water", 0.5, "cup"));
+        wings.addIngredient(new Ingredient("Water (extra)", 1, "tbsp"));
+        wings.addIngredient(new Ingredient("Salt (wet batter)", 0.5, "tsp"));
+        wings.addIngredient(new Ingredient("Kashmiri mirch (wet batter)", 0.5, "tsp"));
+        wings.addIngredient(new Ingredient("Garlic powder (wet batter)", 0.25, "tsp"));
+        wings.addIngredient(new Ingredient("Onion powder (wet batter)", 0.25, "tsp"));
+        wings.addIngredient(new Ingredient("Cumin powder (wet batter)", 0.125, "tsp"));
+        wings.addIngredient(new Ingredient("All purpose flour (dry batter)", 0.5, "cup"));
+        wings.addIngredient(new Ingredient("Panko bread crumbs", 0.5, "cup"));
+        wings.addIngredient(new Ingredient("Salt (dry batter)", 0.5, "tsp"));
+        wings.addIngredient(new Ingredient("Kashmiri mirch (dry batter)", 0.5, "tsp"));
+        wings.addIngredient(new Ingredient("Garlic powder (dry batter)", 0.25, "tsp"));
+        wings.addIngredient(new Ingredient("Onion powder (dry batter)", 0.25, "tsp"));
+        wings.addIngredient(new Ingredient("Cumin powder (dry batter)", 0.125, "tsp"));
+        wings.addIngredient(new Ingredient("Unsalted butter", 2, "tbsp"));
+        wings.addIngredient(new Ingredient("Minced garlic", 1, "tbsp"));
+        wings.addIngredient(new Ingredient("Buffalo sauce", 0.25, "cup"));
+        wings.addIngredient(new Ingredient("Honey", 3, "tbsp"));
+        wings.addIngredient(new Ingredient("Smoked paprika", 0.5, "tsp"));
+        wings.addIngredient(new Ingredient("Soy sauce", 1, "tbsp"));
+        wings.addIngredient(new Ingredient("Enoki mushrooms", 9, "oz"));
+        addRecipe(wings);
+
+        Recipe tart = new Recipe(
+                "French Onion Mushroom Tart",
+                "Caramelized onions, sautéed mushrooms, thyme, and Gruyere on puff pastry.",
+                "1) Prep ingredients; keep puff pastry cold.\n"
+                        + "2) Caramelize onions in 1½ tbsp ghee/butter with salt/pepper (~20 min).\n"
+                        + "3) Add sherry; bubble, then add beef stock; bubble. Remove onions to cool.\n"
+                        + "4) In same skillet add remaining ghee/butter; sauté mushrooms 5–7 min. Add garlic + 1 tsp thyme; cool on paper towel.\n"
+                        + "5) Preheat oven to 400°F.\n"
+                        + "6) Roll puff pastry on parchment to ~10 x 13 inches, ~⅛ inch thick. Score ½-inch border; prick center.\n"
+                        + "7) Add ¾ cup cheese, mushrooms, onions, then ½ cup cheese.\n"
+                        + "8) Egg wash border; bake 26–30 min until deep golden.\n"
+                        + "9) Cool 10 min; garnish with remaining thyme; cut into 8 pieces.",
+                60,
+                8
+        );
+        tart.addIngredient(new Ingredient("Ghee or butter (divided)", 3, "tbsp"));
+        tart.addIngredient(new Ingredient("Onions (medium)", 2, "pcs"));
+        tart.addIngredient(new Ingredient("Salt", 1, "to taste"));
+        tart.addIngredient(new Ingredient("Black pepper", 1, "to taste"));
+        tart.addIngredient(new Ingredient("Sherry (or white wine)", 0.25, "cup"));
+        tart.addIngredient(new Ingredient("Beef stock", 0.25, "cup"));
+        tart.addIngredient(new Ingredient("Shiitake or cremini mushrooms", 12, "oz"));
+        tart.addIngredient(new Ingredient("Garlic cloves", 2, "pcs"));
+        tart.addIngredient(new Ingredient("Fresh thyme leaves (divided)", 1, "tbsp"));
+        tart.addIngredient(new Ingredient("All-butter puff pastry", 14, "oz"));
+        tart.addIngredient(new Ingredient("Gruyere cheese (grated)", 1.25, "cups"));
+        tart.addIngredient(new Ingredient("Egg (whisked, for egg wash)", 1, "pc"));
+        addRecipe(tart);
+
+        Recipe tamales = new Recipe(
+                "Oyster Mushroom Tamales with Mole Encacahuatado",
+                "Oven-roasted oyster mushrooms in tamales with a rich peanut mole.",
+                "1) Preheat oven to 450°F. Toss mushrooms with 5 tbsp oil, 1¼ tsp salt, 1 tsp pepper; bake 20–26 min (stir after 15); cool.\n"
+                        + "2) Toast peanuts + garlic + allspice + cinnamon 2–4 min; transfer to blender.\n"
+                        + "3) In saucepan: tomatoes + onion + 1 tbsp oil; cook until blackened. Add guajillo chiles 1–2 min.\n"
+                        + "4) Add broth, chipotles, adobo sauce, remaining salt/pepper; boil; cover off-heat 10 min to soften chiles.\n"
+                        + "5) Blend with peanut mixture until smooth.\n"
+                        + "6) Cook sauce with remaining 1 tbsp oil, simmer until thickened (~10 min). Cool.\n"
+                        + "7) Assemble: spread ¼ cup masa in husk (5x4 rectangle). Add 1½ tbsp mole + mushrooms. Fold/roll.\n"
+                        + "8) Steam upright 45 min. Rest tamal 10 min and test; continue if needed.\n"
+                        + "9) Rest finished tamales 15 min in pot. Serve with mole, peanuts, cilantro.",
+                120,
+                24
+        );
+        tamales.addIngredient(new Ingredient("Oyster mushrooms", 22, "oz"));
+        tamales.addIngredient(new Ingredient("Canola oil (divided)", 7, "tbsp"));
+        tamales.addIngredient(new Ingredient("Kosher salt (divided)", 1.75, "tsp"));
+        tamales.addIngredient(new Ingredient("Black pepper (divided)", 1.25, "tsp"));
+        tamales.addIngredient(new Ingredient("Roasted peanuts (unsalted)", 0.75, "cup"));
+        tamales.addIngredient(new Ingredient("Garlic cloves", 2, "pcs"));
+        tamales.addIngredient(new Ingredient("Whole allspice", 2, "pcs"));
+        tamales.addIngredient(new Ingredient("Cinnamon stick", 1, "pc"));
+        tamales.addIngredient(new Ingredient("Tomatoes (small)", 2, "pcs"));
+        tamales.addIngredient(new Ingredient("Yellow onion (small)", 1, "pc"));
+        tamales.addIngredient(new Ingredient("Dried guajillo chiles", 4, "pcs"));
+        tamales.addIngredient(new Ingredient("Vegetable broth", 2, "cups"));
+        tamales.addIngredient(new Ingredient("Chipotle chiles in adobo", 3, "pcs"));
+        tamales.addIngredient(new Ingredient("Adobo sauce", 1, "tbsp"));
+        tamales.addIngredient(new Ingredient("Dried corn husks", 24, "pcs"));
+        tamales.addIngredient(new Ingredient("Masa preparada for tamales", 1, "batch"));
+        tamales.addIngredient(new Ingredient("Fresh cilantro (garnish)", 1, "to taste"));
+        tamales.addIngredient(new Ingredient("Chopped peanuts (garnish)", 1, "to taste"));
+        addRecipe(tamales);
     }
 
-    // Main method used for simple testing of the RecipeBookApp class.
+    // Main method used for simple testing and launching the GUI.
     public static void main(String[] args) {
         RecipeBookApp app = new RecipeBookApp();
-        System.out.println("RecipeBookApp started. Number of recipes: "
-                + app.getRecipes().size());
+
+        // Testing code (prints to console so you can show it works).
+        app.loadSampleRecipes();
+        System.out.println("Recipes loaded: " + app.getRecipes().size());
+        System.out.println("Find 'French Onion Mushroom Tart': "
+                + (app.findRecipeByTitle("French Onion Mushroom Tart") != null));
+
+        app.startApp();
+    }
+
+    /* Inner Class: AddRecipeDialog
+     * Description: Modal dialog used to collect recipe information from the user.
+     */
+    private class AddRecipeDialog extends JDialog {
+
+        // The recipe created by this dialog (null if cancelled).
+        private Recipe createdRecipe;
+
+        // Fields for basic recipe info.
+        private JTextField titleField;
+        private JTextArea descriptionField;
+        private JTextArea instructionsField;
+        private JSpinner prepTimeSpinner;
+        private JSpinner servingsSpinner;
+
+        // Fields for ingredient input.
+        private JTextField ingNameField;
+        private JSpinner ingAmountSpinner;
+        private JTextField ingUnitField;
+
+        // Temp storage for ingredients being added.
+        private ArrayList<Ingredient> tempIngredients;
+        private DefaultListModel<String> tempIngredientListModel;
+        private JList<String> tempIngredientList;
+
+        // Constructor that builds the dialog UI.
+        public AddRecipeDialog() {
+            super((JFrame) null, "Add Recipe", true);
+            this.createdRecipe = null;
+            this.tempIngredients = new ArrayList<Ingredient>();
+
+            buildDialogUI();
+
+            setSize(560, 650);
+            setLocationRelativeTo(null);
+        }
+
+        // Returns the recipe created by the dialog, or null if cancelled.
+        public Recipe getCreatedRecipe() {
+            return createdRecipe;
+        }
+
+        // Builds the dialog user interface.
+        private void buildDialogUI() {
+            setLayout(new BorderLayout(10, 10));
+
+            JPanel topPanel = new JPanel(new GridLayout(6, 2, 8, 8));
+            topPanel.setBorder(BorderFactory.createTitledBorder("Recipe Info"));
+
+            titleField = new JTextField();
+
+            descriptionField = new JTextArea(3, 20);
+            descriptionField.setLineWrap(true);
+            descriptionField.setWrapStyleWord(true);
+
+            instructionsField = new JTextArea(5, 20);
+            instructionsField.setLineWrap(true);
+            instructionsField.setWrapStyleWord(true);
+
+            prepTimeSpinner = new JSpinner(new SpinnerNumberModel(10, 0, 10000, 1));
+            servingsSpinner = new JSpinner(new SpinnerNumberModel(2, 0, 1000, 1));
+
+            topPanel.add(new JLabel("Title:"));
+            topPanel.add(titleField);
+
+            topPanel.add(new JLabel("Description:"));
+            topPanel.add(new JScrollPane(descriptionField));
+
+            topPanel.add(new JLabel("Instructions:"));
+            topPanel.add(new JScrollPane(instructionsField));
+
+            topPanel.add(new JLabel("Prep Time (minutes):"));
+            topPanel.add(prepTimeSpinner);
+
+            topPanel.add(new JLabel("Servings:"));
+            topPanel.add(servingsSpinner);
+
+            JPanel midPanel = new JPanel(new BorderLayout(10, 10));
+            midPanel.setBorder(BorderFactory.createTitledBorder("Ingredients"));
+
+            JPanel ingInputPanel = new JPanel(new GridLayout(4, 2, 8, 8));
+            ingNameField = new JTextField();
+            ingAmountSpinner = new JSpinner(new SpinnerNumberModel(1.0, 0.0, 100000.0, 0.25));
+            ingUnitField = new JTextField();
+
+            JButton addIngButton = new JButton("Add Ingredient");
+            JButton removeIngButton = new JButton("Remove Selected");
+
+            ingInputPanel.add(new JLabel("Name:"));
+            ingInputPanel.add(ingNameField);
+
+            ingInputPanel.add(new JLabel("Amount:"));
+            ingInputPanel.add(ingAmountSpinner);
+
+            ingInputPanel.add(new JLabel("Unit:"));
+            ingInputPanel.add(ingUnitField);
+
+            ingInputPanel.add(addIngButton);
+            ingInputPanel.add(removeIngButton);
+
+            tempIngredientListModel = new DefaultListModel<String>();
+            tempIngredientList = new JList<String>(tempIngredientListModel);
+            JScrollPane ingScroll = new JScrollPane(tempIngredientList);
+            ingScroll.setPreferredSize(new Dimension(200, 160));
+
+            midPanel.add(ingInputPanel, BorderLayout.NORTH);
+            midPanel.add(ingScroll, BorderLayout.CENTER);
+
+            JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+            JButton saveButton = new JButton("Save");
+            JButton cancelButton = new JButton("Cancel");
+            bottomPanel.add(saveButton);
+            bottomPanel.add(cancelButton);
+
+            add(topPanel, BorderLayout.NORTH);
+            add(midPanel, BorderLayout.CENTER);
+            add(bottomPanel, BorderLayout.SOUTH);
+
+            addIngButton.addActionListener(e -> {
+                String ingName = ingNameField.getText().trim();
+                double ingAmt = ((Number) ingAmountSpinner.getValue()).doubleValue();
+                String ingUnit = ingUnitField.getText().trim();
+
+                if (ingName.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Ingredient name cannot be empty.");
+                    return;
+                }
+
+                Ingredient ing = new Ingredient(ingName, ingAmt, ingUnit);
+                tempIngredients.add(ing);
+                tempIngredientListModel.addElement(ing.toString());
+
+                ingNameField.setText("");
+                ingUnitField.setText("");
+                ingAmountSpinner.setValue(1.0);
+            });
+
+            removeIngButton.addActionListener(e -> {
+                int idx = tempIngredientList.getSelectedIndex();
+                if (idx < 0 || idx >= tempIngredients.size()) {
+                    JOptionPane.showMessageDialog(this, "Select an ingredient to remove.");
+                    return;
+                }
+
+                tempIngredients.remove(idx);
+                tempIngredientListModel.remove(idx);
+            });
+
+            saveButton.addActionListener(e -> {
+                String title = titleField.getText().trim();
+                String desc = descriptionField.getText().trim();
+                String instr = instructionsField.getText().trim();
+                int prep = ((Number) prepTimeSpinner.getValue()).intValue();
+                int serv = ((Number) servingsSpinner.getValue()).intValue();
+
+                if (title.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Recipe title cannot be empty.");
+                    return;
+                }
+
+                if (tempIngredients.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Please add at least one ingredient.");
+                    return;
+                }
+
+                Recipe newRecipe = new Recipe(title, desc, instr, prep, serv);
+                for (int i = 0; i < tempIngredients.size(); i++) {
+                    newRecipe.addIngredient(tempIngredients.get(i));
+                }
+
+                createdRecipe = newRecipe;
+                dispose();
+            });
+
+            cancelButton.addActionListener(e -> {
+                createdRecipe = null;
+                dispose();
+            });
+        }
     }
 }
