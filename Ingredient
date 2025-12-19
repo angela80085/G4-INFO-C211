@@ -1,0 +1,69 @@
+/* Project: Digital Recipe Book
+ * Author: Angela Jones
+ * Date: 12-17-2025
+ * Description: Represents a single ingredient in a recipe,
+ * including its name, amount, and unit of measure.
+ */
+
+package your.package.name;
+
+public class Ingredient {
+
+    // The name of the ingredient.
+    private String name;
+
+    // The amount of the ingredient.
+    private double amount;
+
+    // The unit of measure for the ingredient amount (for example: "g", "cup").
+    private String unit;
+
+    // Default constructor that creates an empty ingredient.
+    public Ingredient() {
+        this.name = "";
+        this.amount = 0.0;
+        this.unit = "";
+    }
+
+    // Constructor that creates an ingredient with all fields set.
+    public Ingredient(String name, double amount, String unit) {
+        this.name = name;
+        this.amount = amount;
+        this.unit = unit;
+    }
+
+    // Gets the name of the ingredient.
+    public String getName() {
+        return name;
+    }
+
+    // Sets the name of the ingredient.
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    // Gets the amount of the ingredient.
+    public double getAmount() {
+        return amount;
+    }
+
+    // Sets the amount of the ingredient.
+    public void setAmount(double amount) {
+        this.amount = amount;
+    }
+
+    // Gets the unit of measure of the ingredient.
+    public String getUnit() {
+        return unit;
+    }
+
+    // Sets the unit of measure of the ingredient.
+    public void setUnit(String unit) {
+        this.unit = unit;
+    }
+
+    // Returns a simple text representation of this ingredient.
+    public String toString() {
+        return amount + " " + unit + " " + name;
+    }
+}
