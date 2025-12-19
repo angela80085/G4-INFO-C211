@@ -5,7 +5,7 @@
  * including its name, amount, and unit of measure.
  */
 
-package your.package.name;
+import java.text.DecimalFormat;
 
 public class Ingredient {
 
@@ -62,8 +62,15 @@ public class Ingredient {
         this.unit = unit;
     }
 
-    // Returns a simple text representation of this ingredient.
+    // Returns a readable text representation of this ingredient.
     public String toString() {
-        return amount + " " + unit + " " + name;
+        DecimalFormat df = new DecimalFormat("0.##");
+        String amt = df.format(amount);
+
+        if (unit == null || unit.trim().isEmpty()) {
+            return amt + " " + name;
+        }
+
+        return amt + " " + unit + " " + name;
     }
 }
