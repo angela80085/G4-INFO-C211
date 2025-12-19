@@ -3,19 +3,40 @@
 Project: Digital Recipe Book
 Author: Angela 
 
-### Classes
+## Project Description
 
-1. `Ingredient.java` 
-   - Represents a single ingredient in a recipe.
-   - Stores information such as ingredient name, amount, and unit of measure.
-   - Provides getters, setters, and constructors.
+The Digital Recipe Book is a Java application that allows users to store,
+view, search, and manage cooking recipes. Each recipe contains a title,
+description, preparation time, servings, and a list of ingredients.
+The application includes a minimal graphical user interface implemented
+using Java Swing.
 
-2. `Recipe.java`
-   - Represents a full recipe.
-   - Stores the recipe title, description, list of ingredients, preparation time, and number of servings.
-   - Provides getters, setters, and constructors.
+## Class Structure
 
-3. `RecipeBookApp.java` 
-   - Manages a collection of `Recipe` objects using an ArrayList.
-   - Provides methods to add, remove, and search for recipes.
-   - Will later include a minimal graphical user interface (GUI) to display recipes and allow the user to add or select recipes.
+- Ingredient.java  
+  Represents a single ingredient, including name, amount, and unit.
+
+- Recipe.java  
+  Represents a recipe, including title, description, preparation time,
+  servings, and a list of Ingredient objects.
+
+- RecipeBookApp.java  
+  Manages the collection of recipes using an ArrayList and provides
+  the graphical user interface for interacting with the recipe book.
+
+## Interface Functionality
+
+- Displays a list of recipes
+- Allows the user to add new recipes
+- Allows searching recipes by title
+- Displays recipe details and ingredients
+- Allows deleting a selected recipe
+
+## Author
+
+- All classes and functionality implemented by: Your Name
+
+## How to Run
+
+Run the executable JAR file or run RecipeBookApp.java, which contains
+the main method.
